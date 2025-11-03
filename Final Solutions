@@ -1,0 +1,7 @@
+Station	Cipher  | Used	Puzzle | Source|	Decoded Name (what players type on final gate)|	Role / Why Chosen
+1	Caesar Cipher |	Reverse CAPTCHA — Level 1	🧠 | Parisa Tabriz	Google’s “Security Princess”; cybersecurity and browser security pioneer.
+2	Pigpen Cipher |	Memory Puzzle	🤖 |  Fei-Fei Li	Stanford AI visionary; computer-vision pioneer behind ImageNet.
+3	Playfair Cipher |	Reverse CAPTCHA — Level 2	🔐 | Timnit Gebru	AI ethics researcher; co-founder of Black in AI.
+4	Beale Cipher |	Morse Code Puzzle	🧩 | Joy Buolamwini	Founder, Algorithmic Justice League; fights algorithmic bias.
+5	Enigma Machine |	Laser Puzzle	⚙️| Daphne Koller	Co-founder of Coursera; leader in probabilistic AI and ML.
+6	Modern Cipher (Base64 + XOR) |	Final Verification Puzzle	💡| Cynthia Breazeal	MIT roboticist; pioneer of social robotics and human-AI interaction.
