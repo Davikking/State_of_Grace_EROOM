@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Laser Puzzle — 3 Levels</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f1218;
+      --beam-off: rgba(120, 180, 255, 0.15);
+      --beam-on: #91c6ff;
+      --success: #53e0a6;
+      --danger: #ff8686;
+      --warn: #ffc664;
+      --text: #edf2ff;
+      --muted: #95a1b7;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top, #1b222f 0%, #0f1218 60%, #0b0f14 100%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 1.2rem;
+    }
+    .app {
+      width: min(100%, 560px);
+      background: rgba(15, 18, 25, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(120, 180, 255, 0.08);
+      border-radius: 18px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: .5rem;
+      align-items: center;
+    }
+    h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .level-indicator {
+      font-size: .65rem;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(55px, 1fr));
+      gap: .45rem;
+    }
+    .tile {
+      position: relative;
+      aspect-ratio: 1/1;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.03), rgba(10,12,16,0.4));
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow .1s ease-out, transform .1s ease-out;
+    }
+    .tile:active:not(.fixed) { transform: scale(.95); }
+    .tile.fixed { cursor: default; }
+    .tile.lit {
+      box-shadow: 0 0 20px rgba(145,198,255,0.5);
+      border-color: rgba(145,198,255,0.6);
+    }
+    .tile-inner {
+      position: absolute;
+      inset: 20%;
+      transform-origin: center;
+      transition: transform .15s linear;
+    }
+
+    /* === SHAPES === */
+    /* straight = single bar (rotated by JS) */
+    .tile-type-straight::before {
+      content: "";
+      position: absolute;
+      top: 45%;
+      left: 10%;
+      right: 10%;
+      height: 10%;
+      background: var(--beam-off);
+      border-radius: 999px;
+      transition: background .12s;
+    }
+
+    /* corner = TRUE 90-DEGREE L (not a +) */
+    .tile-type-corner::before,
+    .tile-type-corner::after {
+      content: "";
+      position: absolute;
+      background: var(--beam-off);
+      border-radius: 999px;
+      transition: background .12s ease-out;
+    }
+    /* horizontal bit: center → right */
+    .tile-type-corner::before {
+      top: 45%;
+      left: 50%;
+      right: 10%;
+      height: 10%;
+    }
+    /* vertical bit: center → down */
+    .tile-type-corner::after {
+      left: 45%;
+      top: 50%;
+      bottom: 10%;
+      width: 10%;
+    }
+
+    /* relay = amber square */
+    .tile-type-relay::before {
+      content: "";
+      position: absolute;
+      inset: 10%;
+      border: 2px dashed rgba(255,198,100,0.35);
+      border-radius: 12px;
+    }
+    .tile-type-relay::after {
+      content: "";
+      position: absolute;
+      inset: 33%;
+      background: rgba(255,198,100,0.35);
+      border-radius: 999px;
+      box-shadow: 0 0 10px rgba(255,198,100,0.45);
+    }
+
+    /* source / target / fake target */
+    .tile-type-source::before,
+    .tile-type-target::before,
+    .tile-type-faketarget::before {
+      content: "";
+      position: absolute;
+      width: 45%;
+      height: 45%;
+      border-radius: 999px;
+      border: 2px solid var(--beam-on);
+      box-shadow: inset 0 0 8px rgba(145,198,255,0.6);
+    }
+    .tile-type-source::after {
+      content: "";
+      position: absolute;
+      width: 50%;
+      height: 8%;
+      background: var(--beam-on);
+      border-radius: 999px;
+      top: 50%;
+      left: 48%;
+      transform: translateY(-50%);
+    }
+    .tile-type-target::before {
+      border-color: rgba(83,224,166,1);
+      box-shadow: inset 0 0 8px rgba(83,224,166,0.4);
+    }
+    .tile-type-faketarget::before {
+      border-color: rgba(255,134,134,0.9);
+      box-shadow: inset 0 0 8px rgba(255,134,134,0.4);
+    }
+
+    /* glow lit paths */
+    .tile.lit .tile-inner::before,
+    .tile.lit .tile-inner::after {
+      background: var(--beam-on);
+    }
+
+    .controls {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      background: rgba(120,180,255,0.1);
+      border: 1px solid rgba(120,180,255,0.4);
+      border-radius: 12px;
+      color: var(--text);
+      padding: .6rem .8rem;
+      font-size: .75rem;
+      cursor: pointer;
+      transition: transform .1s;
+    }
+    button:active { transform: translateY(1px); }
+    button.secondary {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.1);
+      color: var(--muted);
+    }
+    button.hidden {
+      display: none;
+    }
+
+    .message {
+      font-size: .72rem;
+      color: var(--muted);
+      min-height: 2.2rem;
+      background: rgba(0,0,0,0.15);
+      border-radius: 10px;
+      padding: .4rem .6rem;
+    }
+    .message.success {
+      color: #eafff2;
+      background: rgba(83,224,166,0.08);
+      border: 1px solid rgba(83,224,166,0.5);
+    }
+    .token {
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+      margin-top: .3rem;
+      padding: .3rem .5rem;
+      font-family: monospace;
+      font-size: .7rem;
+    }
+
+    @media (max-width: 520px) {
+      header { flex-direction: column; align-items: flex-start; }
+      .grid { gap: .35rem; }
+      .controls { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h2 id="title">AI Laser Puzzle — Level 1</h2>
+      <div class="level-indicator" id="levelIndicator">Level 1 / 3</div>
+    </header>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="controls">
+      <button id="checkBtn">Submit / Validate Beam</button>
+      <button class="secondary" id="resetBtn">Reset Level</button>
+      <button class="secondary hidden" id="nextBtn">Next Level →</button>
+    </div>
+
+    <div class="message" id="msg">
+      Rotate the nodes so the beam goes: source → relay A → relay B → green receiver. Red receiver is fake.
+    </div>
+  </div>
+
+  <script>
+    const COLS = 6, ROWS = 6;
+    const DX = [0,1,0,-1];
+    const DY = [-1,0,1,0];
+
+    // base connection shapes (unrotated)
+    const BASE = {
+      empty:      [0,0,0,0],
+      source:     [0,1,0,0],   // emit right
+      target:     [1,0,0,0],   // accept from up
+      faketarget: [1,0,0,0],
+      straight:   [0,1,0,1],   // horizontal
+      corner:     [0,1,1,0],   // right + down (L)
+      relay:      [0,1,1,0],   // behaves like L
+    };
+
+    function rotateConns(arr, n) {
+      let a = arr.slice();
+      for (let i=0;i<n;i++) {
+        // [up,right,down,left] -> [left,up,right,down]
+        a = [a[3], a[0], a[1], a[2]];
+      }
+      return a;
+    }
+
+    function xyToIndex(x,y){return y*COLS+x;}
+    function indexToXY(i){return {x:i%COLS,y:Math.floor(i/COLS)};}
+
+    // ---------- LEVEL DEFINITIONS ----------
+    // Level 1 (the one we just fixed)
+    function makeLevel1(){
+      return [
+        // row 0
+        {type:"empty",rot:0,fixed:true},     //0
+        {type:"corner",rot:2,fixed:false},   //1 decoy
+        {type:"faketarget",rot:2,fixed:true},//2 fake
+        {type:"empty",rot:0,fixed:true},     //3
+        {type:"empty",rot:0,fixed:true},     //4
+        {type:"empty",rot:0,fixed:true},     //5
+        // row 1
+        {type:"empty",rot:0,fixed:true},     //6
+        {type:"straight",rot:1,fixed:false}, //7 decoy
+        {type:"corner",rot:0,fixed:false},   //8 decoy
+        {type:"empty",rot:0,fixed:true},     //9
+        {type:"empty",rot:0,fixed:true},     //10
+        {type:"empty",rot:0,fixed:true},     //11
+        // row 2
+        {type:"source",rot:0,fixed:true},    //12
+        {type:"straight",rot:1,fixed:false}, //13
+        {type:"relay",rot:0,fixed:false},    //14 (relay A)
+        {type:"corner",rot:3,fixed:false},   //15 (distractor)
+        {type:"empty",rot:0,fixed:true},     //16
+        {type:"empty",rot:0,fixed:true},     //17
+        // row 3
+        {type:"empty",rot:0,fixed:true},     //18
+        {type:"empty",rot:0,fixed:true},     //19
+        {type:"relay",rot:0,fixed:false},    //20 (relay B)
+        {type:"straight",rot:1,fixed:false}, //21
+        {type:"straight",rot:1,fixed:false}, //22
+        {type:"target",rot:3,fixed:true},    //23 real target (from left)
+        // row 4
+        ...Array(6).fill(0).map(()=>({type:"empty",rot:0,fixed:true})),
+        // row 5
+        ...Array(6).fill(0).map(()=>({type:"empty",rot:0,fixed:true})),
+      ];
+    }
+
+    // Level 2 — longer path, 2 relays, target higher up
+    function makeLevel2(){
+      return [
+        // row0
+        {type:"empty",rot:0,fixed:true},      //0
+        {type:"corner",rot:2,fixed:false},    //1
+        {type:"faketarget",rot:2,fixed:true}, //2 fake
+        {type:"empty",rot:0,fixed:true},      //3
+        {type:"empty",rot:0,fixed:true},      //4
+        {type:"empty",rot:0,fixed:true},      //5
+        // row1
+        {type:"empty",rot:0,fixed:true},      //6
+        {type:"empty",rot:0,fixed:true},      //7
+        {type:"empty",rot:0,fixed:true},      //8
+        {type:"empty",rot:0,fixed:true},      //9
+        {type:"empty",rot:0,fixed:true},      //10
+        {type:"target",rot:2,fixed:true},     //11 target (5,1) expects from down
+        // row2
+        {type:"source",rot:0,fixed:true},     //12
+        {type:"straight",rot:1,fixed:false},  //13
+        {type:"straight",rot:1,fixed:false},  //14
+        {type:"relay",rot:0,fixed:false},     //15 relay A (should turn down)
+        {type:"empty",rot:0,fixed:true},      //16
+        {type:"straight",rot:1,fixed:false},  //17 at (5,2) vertical
+        // row3
+        {type:"empty",rot:0,fixed:true},      //18
+        {type:"empty",rot:0,fixed:true},      //19
+        {type:"empty",rot:0,fixed:true},      //20
+        {type:"straight",rot:1,fixed:false},  //21 (3,3) vertical
+        {type:"empty",rot:0,fixed:true},      //22
+        {type:"straight",rot:1,fixed:false},  //23 (5,3) vertical
+        // row4
+        {type:"empty",rot:0,fixed:true},      //24
+        {type:"empty",rot:0,fixed:true},      //25
+        {type:"empty",rot:0,fixed:true},      //26
+        {type:"corner",rot:0,fixed:false},    //27 (3,4) from up -> right
+        {type:"straight",rot:1,fixed:false},  //28 (4,4) horiz
+        {type:"relay",rot:0,fixed:false},     //29 (5,4) relay B (up)
+        // row5
+        ...Array(6).fill(0).map(()=>({type:"empty",rot:0,fixed:true})),
+      ];
+    }
+
+    // Level 3 — 3 relays, real snake
+    function makeLevel3(){
+      return [
+        // row0
+        {type:"empty",rot:0,fixed:true},      //0
+        {type:"corner",rot:2,fixed:false},    //1
+        {type:"faketarget",rot:2,fixed:true}, //2
+        {type:"empty",rot:0,fixed:true},      //3
+        {type:"empty",rot:0,fixed:true},      //4
+        {type:"empty",rot:0,fixed:true},      //5
+        // row1
+        {type:"empty",rot:0,fixed:true},      //6
+        {type:"empty",rot:0,fixed:true},      //7
+        {type:"empty",rot:0,fixed:true},      //8
+        {type:"empty",rot:0,fixed:true},      //9
+        {type:"empty",rot:0,fixed:true},      //10
+        {type:"target",rot:2,fixed:true},     //11 (5,1) expects from down
+        // row2
+        {type:"source",rot:0,fixed:true},     //12
+        {type:"straight",rot:1,fixed:false},  //13
+        {type:"relay",rot:0,fixed:false},     //14 relay A (should go down)
+        {type:"empty",rot:0,fixed:true},      //15
+        {type:"empty",rot:0,fixed:true},      //16
+        {type:"straight",rot:1,fixed:false},  //17 (5,2) vertical
+        // row3
+        {type:"empty",rot:0,fixed:true},      //18
+        {type:"empty",rot:0,fixed:true},      //19
+        {type:"corner",rot:0,fixed:false},    //20 (2,3) from up -> right
+        {type:"straight",rot:1,fixed:false},  //21 (3,3)
+        {type:"relay",rot:0,fixed:false},     //22 (4,3) relay B (down)
+        {type:"straight",rot:1,fixed:false},  //23 (5,3) vertical up
+        // row4
+        {type:"empty",rot:0,fixed:true},      //24
+        {type:"empty",rot:0,fixed:true},      //25
+        {type:"empty",rot:0,fixed:true},      //26
+        {type:"empty",rot:0,fixed:true},      //27
+        {type:"corner",rot:0,fixed:false},    //28 (4,4) from up -> right
+        {type:"relay",rot:0,fixed:false},     //29 (5,4) relay C (up)
+        // row5
+        ...Array(6).fill(0).map(()=>({type:"empty",rot:0,fixed:true})),
+      ];
+    }
+
+    const LEVELS = [
+      {
+        name: "AI Laser Puzzle — Level 1",
+        build: makeLevel1,
+        source: 12,
+        target: 23,
+        fake: 2,
+        requiredRelays: [14, 20],
+        token: "LASER-LINK-PASS-L1"
+      },
+      {
+        name: "AI Laser Puzzle — Level 2",
+        build: makeLevel2,
+        source: 12,
+        target: 11,
+        fake: 2,
+        requiredRelays: [15, 29],
+        token: "LASER-LINK-PASS-L2"
+      },
+      {
+        name: "AI Laser Puzzle — Level 3",
+        build: makeLevel3,
+        source: 12,
+        target: 11,
+        fake: 2,
+        requiredRelays: [14, 22, 29],
+        token: "ROBO-LASER-CORE-7X9"
+      },
+    ];
+
+    let currentLevel = 0;
+    let puzzle = [];
+    const gridEl = document.getElementById("grid");
+    const msgEl = document.getElementById("msg");
+    const titleEl = document.getElementById("title");
+    const levelIndicator = document.getElementById("levelIndicator");
+    const nextBtn = document.getElementById("nextBtn");
+
+    function getConns(tile) {
+      const base = BASE[tile.type] || [0,0,0,0];
+      return rotateConns(base, tile.rot);
+    }
+
+    function traceBeam() {
+      const level = LEVELS[currentLevel];
+      const sourceIndex = level.source;
+      const lit = [];
+      const srcConns = getConns(puzzle[sourceIndex]);
+      let dir = srcConns.indexOf(1);
+      if (dir === -1) return {lit, hitReal:false, hitFake:false, relays:[]};
+
+      let current = sourceIndex;
+      let hitReal = false;
+      let hitFake = false;
+      const relaysHit = [];
+
+      for (let safety = 0; safety < 80; safety++) {
+        lit.push(current);
+        const {x, y} = indexToXY(current);
+        const nx = x + DX[dir];
+        const ny = y + DY[dir];
+        if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) break;
+        const ni = xyToIndex(nx, ny);
+        const tile = puzzle[ni];
+        const conns = getConns(tile);
+        const needed = (dir + 2) % 4;
+        if (!conns[needed]) {
+          lit.push(ni);
+          break;
+        }
+        if (tile.type === "relay") {
+          relaysHit.push(ni);
+        }
+        if (tile.type === "target") {
+          lit.push(ni);
+          hitReal = true;
+          break;
+        }
+        if (tile.type === "faketarget") {
+          lit.push(ni);
+          hitFake = true;
+          break;
+        }
+
+        // choose outgoing
+        let outDir = null;
+        for (let d = 0; d < 4; d++) {
+          if (d === needed) continue;
+          if (conns[d]) { outDir = d; break; }
+        }
+        if (outDir == null) {
+          lit.push(ni);
+          break;
+        }
+        current = ni;
+        dir = outDir;
+      }
+
+      return {lit, hitReal, hitFake, relays: relaysHit};
+    }
+
+    function updateBeamPreview() {
+      gridEl.querySelectorAll(".tile").forEach(t => t.classList.remove("lit"));
+      const {lit} = traceBeam();
+      lit.forEach(i => {
+        const el = gridEl.querySelector(`[data-index="${i}"]`);
+        if (el) el.classList.add("lit");
+      });
+    }
+
+    function renderBoard() {
+      gridEl.innerHTML = "";
+      puzzle.forEach((tile, idx) => {
+        const el = document.createElement("div");
+        el.className = "tile" + (tile.fixed ? " fixed" : "");
+        el.dataset.index = idx;
+        const inner = document.createElement("div");
+        inner.className = "tile-inner tile-type-" + tile.type;
+        inner.style.transform = `rotate(${tile.rot * 90}deg)`;
+        el.appendChild(inner);
+        el.addEventListener("click", () => {
+          if (tile.fixed) return;
+          tile.rot = (tile.rot + 1) % 4;
+          inner.style.transform = `rotate(${tile.rot * 90}deg)`;
+          updateBeamPreview();
+        });
+        gridEl.appendChild(el);
+      });
+      updateBeamPreview();
+    }
+
+    function loadLevel(idx) {
+      currentLevel = idx;
+      const level = LEVELS[currentLevel];
+      puzzle = level.build();
+      titleEl.textContent = level.name;
+      levelIndicator.textContent = `Level ${currentLevel+1} / ${LEVELS.length}`;
+      msgEl.classList.remove("success");
+      msgEl.textContent = "Rotate the nodes so the beam hits all required relays, then the real receiver. Submit to verify.";
+      nextBtn.classList.add("hidden");
+      renderBoard();
+    }
+
+    function checkSolution() {
+      const level = LEVELS[currentLevel];
+      const {lit, hitReal, hitFake} = traceBeam();
+      const relaysOK = level.requiredRelays.every(r => lit.includes(r));
+      const targetOK = lit.includes(level.target);
+      if (hitReal && targetOK && relaysOK) {
+        msgEl.classList.add("success");
+        msgEl.innerHTML = `✅ Circuit validated for Level ${currentLevel+1}.<div class="token">TOKEN: <strong>${level.token}</strong></div>`;
+        if (currentLevel < LEVELS.length - 1) {
+          nextBtn.classList.remove("hidden");
+        }
+      } else {
+        msgEl.classList.remove("success");
+        if (hitFake) {
+          msgEl.innerHTML = "❌ Beam reached a decoy receptor. Route downward first, then right.";
+        } else if (hitReal && !relaysOK) {
+          msgEl.innerHTML = "⚠️ Beam reached the correct receptor but not all relay cores were energized.";
+        } else {
+          msgEl.innerHTML = "❌ Beam misrouted — not reaching the valid receiver.";
+        }
+      }
+    }
+
+    document.getElementById("checkBtn").addEventListener("click", checkSolution);
+    document.getElementById("resetBtn").addEventListener("click", () => loadLevel(currentLevel));
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      if (currentLevel < LEVELS.length - 1) {
+        loadLevel(currentLevel + 1);
+      }
+    });
+
+    // init
+    loadLevel(0);
+  </script>
+</body>
+</html>

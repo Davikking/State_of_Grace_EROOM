@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Morse Code Puzzle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #1c222c;
+      --text: #edf1f5;
+      --muted: #a7b1c0;
+      --accent: #78b4ff;
+      --good: #46d282;
+      --bad: #ff6b6b;
+      --disabled: #4a4f59;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #171b23 0%, #0f1218 40%, #0b0d10 100%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .game-shell {
+      background: rgba(28, 34, 44, 0.45);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 18px;
+      width: min(100%, 480px);
+      padding: 1.2rem 1.2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+    }
+
+    header h1 {
+      font-size: 1.3rem;
+      margin: 0;
+    }
+
+    header p {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .light-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.5rem;
+    }
+
+    .morse-light {
+      width: 110px;
+      height: 110px;
+      border-radius: 999px;
+      background: radial-gradient(circle, #30343e 0%, #1f232a 40%, #0e1014 100%);
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      transition: 0.09s ease-in-out;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    .morse-light.on {
+      background: radial-gradient(circle, #fffdd3 0%, #ffe98d 40%, #efbd4a 100%);
+      box-shadow:
+        0 0 28px rgba(255, 215, 110, 0.6),
+        0 0 70px rgba(255, 215, 110, 0.3);
+      border-color: rgba(255,230,170,0.55);
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 0.7rem 1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #7cb8ff 0%, #3a8fff 100%);
+      color: #0c1115;
+      flex: 1 1 160px;
+      text-align: center;
+    }
+    button.primary:active { transform: translateY(1px); }
+
+    button.secondary {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text);
+      flex: 1 1 120px;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      background: var(--disabled) !important;
+      color: rgba(255,255,255,0.3);
+      box-shadow: none;
+      transform: none;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.6rem;
+      width: 100%;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: rgba(4,6,8,0.3);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 0.6rem 0.7rem;
+      color: var(--text);
+      font-size: 1.05rem;
+    }
+
+    input[type="text"]::placeholder {
+      color: rgba(231,236,243,0.25);
+    }
+
+    .status {
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 600;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.08);
+      font-size: 0.9rem;
+    }
+
+    .status.ok {
+      background: rgba(70, 210, 130, 0.14);
+      color: #b0ffca;
+    }
+    .status.err {
+      background: rgba(255, 107, 107, 0.14);
+      color: #ffbebe;
+    }
+
+    @media (max-width: 480px) {
+      .game-shell {
+        border-radius: 0.75rem;
+        padding: 1rem;
+      }
+      .input-row {
+        flex-wrap: wrap;
+      }
+      button.secondary {
+        width: 100%;
+      }
+      .morse-light {
+        width: 90px;
+        height: 90px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell" aria-label="Morse Code Puzzle">
+    <header>
+      <h1>The AI Wants To Tell You A Secret</h1>
+      <p>Listen &amp; watch the signal. Decode it. Enter the word. Unlock the passcode.</p>
+    </header>
+
+    <div class="light-wrap">
+      <div id="morse-light" class="morse-light" aria-label="Morse signal light"></div>
+    </div>
+
+    <div class="controls">
+      <button id="play-btn" class="primary">Play Clue</button>
+    </div>
+
+    <div class="input-row">
+      <input id="answer-input" type="text" placeholder="Type decoded word..." autocomplete="off" autocapitalize="characters" />
+      <button id="submit-btn" class="secondary">Submit</button>
+    </div>
+
+    <div id="status" class="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    // === 1. Config / Constants ===
+    const SECRET_WORD = "SIGNAL";
+    const FINAL_PASSCODE = "8623";
+
+    // match your pygame timings
+    const DOT_MS = 150;
+    const DASH_MS = DOT_MS * 3;
+    const PART_GAP_MS = DOT_MS;        // gap between dot/dash in a letter
+    const LETTER_GAP_MS = DOT_MS * 3;  // gap between letters
+
+    // Morse dictionary
+    const MORSE_CODE_DICT = {
+      'A': '.-',    'B': '-...',  'C': '-.-.',  'D': '-..',   'E': '.',
+      'F': '..-.',  'G': '--.',   'H': '....',  'I': '..',    'J': '.---',
+      'K': '-.-',   'L': '.-..',  'M': '--',    'N': '-.',    'O': '---',
+      'P': '.--.',  'Q': '--.-',  'R': '.-.',   'S': '...',   'T': '-',
+      'U': '..-',   'V': '...-',  'W': '.--',   'X': '-..-',  'Y': '-.--',
+      'Z': '--..',
+      '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+      '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----'
+    };
+
+    const playBtn = document.getElementById("play-btn");
+    const submitBtn = document.getElementById("submit-btn");
+    const answerInput = document.getElementById("answer-input");
+    const statusEl = document.getElementById("status");
+    const lightEl = document.getElementById("morse-light");
+
+    let isPlaying = false;
+
+    // === 2. Audio setup (Web Audio) ===
+    // (created lazily on first user action to avoid mobile autoplay restrictions)
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new Ctx();
+      }
+      return audioCtx;
+    }
+
+    function playBeep(durationMs, freq = 440) {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      gain.gain.setValueAtTime(0.3, now);
+      osc.start(now);
+      osc.stop(now + durationMs / 1000);
+    }
+
+    // === 3. Build Morse Queue like in Pygame ===
+    function buildMorseQueue(word) {
+      const queue = [];
+      const chars = word.toUpperCase().split("");
+
+      chars.forEach((ch, idx) => {
+        const morse = MORSE_CODE_DICT[ch];
+        if (!morse) return;
+
+        const parts = morse.split("");
+        parts.forEach((p, pIdx) => {
+          if (p === ".") {
+            queue.push({ type: "SOUND", duration: DOT_MS });
+          } else {
+            queue.push({ type: "SOUND", duration: DASH_MS });
+          }
+          // gap between parts of same letter
+          if (pIdx < parts.length - 1) {
+            queue.push({ type: "GAP", duration: PART_GAP_MS });
+          }
+        });
+
+        // gap between letters
+        if (idx < chars.length - 1) {
+          queue.push({ type: "GAP", duration: LETTER_GAP_MS });
+        }
+      });
+
+      return queue;
+    }
+
+    // === 4. Play Morse Queue (light + audio) ===
+    function playMorse(word) {
+      if (isPlaying) return;
+      isPlaying = true;
+      playBtn.disabled = true;
+      submitBtn.disabled = true;
+      answerInput.disabled = true;
+      statusEl.textContent = "";
+
+      const queue = buildMorseQueue(word);
+      let currentIndex = 0;
+
+      function next() {
+        if (currentIndex >= queue.length) {
+          // finished
+          isPlaying = false;
+          playBtn.disabled = false;
+          submitBtn.disabled = false;
+          answerInput.disabled = false;
+          lightEl.classList.remove("on");
+          return;
+        }
+
+        const ev = queue[currentIndex++];
+        if (ev.type === "SOUND") {
+          lightEl.classList.add("on");
+          playBeep(ev.duration);
+          setTimeout(() => {
+            lightEl.classList.remove("on");
+            // small handoff to next event
+            setTimeout(next, 10);
+          }, ev.duration);
+        } else {
+          // GAP
+          lightEl.classList.remove("on");
+          setTimeout(next, ev.duration);
+        }
+      }
+
+      // start
+      next();
+    }
+
+    // === 5. Submit Logic ===
+    function handleSubmit() {
+      if (isPlaying) return; // just like pygame, no submitting during playback
+      const val = answerInput.value.trim().toUpperCase();
+      if (!val) {
+        statusEl.textContent = "Enter the decoded word first.";
+        statusEl.className = "status err";
+        return;
+      }
+
+      if (val === SECRET_WORD) {
+        // success shown ONLY on submit, per your note
+        statusEl.textContent = `SUCCESS! Passcode: ${FINAL_PASSCODE}`;
+        statusEl.className = "status ok";
+      } else {
+        statusEl.textContent = "Try Again...";
+        statusEl.className = "status err";
+        answerInput.value = "";
+        answerInput.focus();
+      }
+    }
+
+    // === 6. Event Listeners ===
+    playBtn.addEventListener("click", () => {
+      // make sure audio ctx is resumed on mobile
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      playMorse(SECRET_WORD);
+    });
+
+    submitBtn.addEventListener("click", handleSubmit);
+
+    answerInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    });
+
+    // focus input on load (desktop)
+    window.addEventListener("load", () => {
+      answerInput.focus();
+    });
+  </script>
+</body>
+</html>

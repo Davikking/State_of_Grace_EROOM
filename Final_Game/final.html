@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Final Verification Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #1c212b;
+      --panel2: #232a36;
+      --accent: #78b4ff;
+      --good: #46d282;
+      --bad: #ef5c5c;
+      --text: #edf0f4;
+      --muted: #9ca4b0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #18202e 0%, #0f1218 55%, #0b0d11 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+    .app {
+      background: rgba(12,14,18,0.45);
+      border: 1px solid rgba(120,180,255,0.12);
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 1.4rem 1.4rem 1.1rem;
+      width: min(980px, 100%);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    header h1 {
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+    .status-chip {
+      background: rgba(120,180,255,0.12);
+      border: 1px solid rgba(120,180,255,0.4);
+      border-radius: 999px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.7rem;
+    }
+    p.desc {
+      margin: 0 0 1rem 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .grid {
+      display: grid;
+      gap: 0.85rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    @media (max-width: 850px) {
+      .grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; }
+    }
+    .field {
+      background: rgba(28,33,44,0.5);
+      border: 1px solid rgba(255,255,255,0.02);
+      border-radius: 14px;
+      padding: 0.7rem 0.7rem 0.75rem;
+    }
+    .field label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+    .field input {
+      width: 100%;
+      background: rgba(4,5,7,0.48);
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius: 10px;
+      padding: 0.55rem 0.65rem;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .hint {
+      margin-top: 0.4rem;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(120,180,255,0.08);
+      border-radius: 8px;
+      padding: 0.38rem 0.5rem 0.45rem;
+      font-size: 0.62rem;
+      line-height: 1.3;
+      color: rgba(237,240,244,0.72);
+    }
+    .hint strong { color: #fff; }
+    button#submitBtn {
+      margin-top: 1.1rem;
+      background: linear-gradient(135deg, #78b4ff 0%, #4eb5ff 100%);
+      border: none;
+      color: #03050a;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 0.65rem 1.4rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    button#submitBtn:active { transform: scale(0.99); }
+    #result {
+      margin-top: 1rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 12px;
+      background: rgba(3,4,6,0.35);
+      border: 1px solid transparent;
+      font-size: 0.88rem;
+      white-space: pre-line;
+    }
+    #result.ok { border-color: rgba(70,210,130,0.4); background: rgba(70,210,130,0.05); }
+    #result.err { border-color: rgba(235,92,92,0.4); background: rgba(235,92,92,0.03); }
+    .wrong-list {
+      margin-top: 0.4rem;
+      font-size: 0.73rem;
+      color: rgba(237,240,244,0.7);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Final Verification Panel</h1>
+      <div class="status-chip">AI Escape Room · Final Gate</div>
+    </header>
+    <p class="desc">
+      Enter the <strong>decoded</strong> keys from each station. Each station used a different cipher — the hint under each box tells you which era/cipher to use. Keep punctuation and capitalization.
+    </p>
+
+    <div class="grid">
+      <div class="field">
+        <label for="s1">Station 1</label>
+        <input id="s1" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> Early shift cipher. Think “move each letter by N”. Oldest one in the room.
+        </div>
+      </div>
+      <div class="field">
+        <label for="s2">Station 2</label>
+        <input id="s2" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> Symbol/grid substitution. Often shown as boxes and X-shapes (Masonic / “pigpen”).
+        </div>
+      </div>
+      <div class="field">
+        <label for="s3">Station 3</label>
+        <input id="s3" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> 5×5 digraph cipher. Uses a keyword to build the square. Popular in 19th/WWI era.
+        </div>
+      </div>
+      <div class="field">
+        <label for="s4">Station 4</label>
+        <input id="s4" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> “Book / number” era. Text mapped through numbers or index references. Think “Beale”.
+        </div>
+      </div>
+      <div class="field">
+        <label for="s5">Station 5</label>
+        <input id="s5" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> Machine-age rotor cipher. German, 1930s. Letters in → rotors turn → letters out.
+        </div>
+      </div>
+      <div class="field">
+        <label for="s6">Station 6</label>
+        <input id="s6" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> Modern / computer-era. Could be XOR + Base64 or block-based. Probably looks “computer-y”.
+        </div>
+      </div>
+    </div>
+
+    <button id="submitBtn">Submit Codes</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    // ==========================================================
+    // We store ONLY SHA-256 hashes of the correct decoded strings.
+    // These hashes were made from these plaintexts:
+    // 1. AI-VISION-PASS-2F9C
+    // 2. OCR-PASS-7N1A
+    // 3. ROBO-ACCESS-9X7K
+    // 4. HUMAN-OVERRIDE-445
+    // 5. SYNTH-CHANNEL-ALPHA
+    // 6. FINAL-MASTER-KEY-01
+    //
+    // But the page NEVER prints those. Players only see hints.
+    // If you change texts, re-hash and replace below.
+    // ==========================================================
+    const STATION_HASHES = [
+      "8cfad1d5e69df8a5f821292299448a1a5c92d337dfd301bbba617d5146d48fa7", // s1 (PARISA TABRIZ)
+      "efca95dae3692777300fea6299683f48d055a99b17af48dc239fd3cf2ccfdba3", // s2
+      "ed73bb02557f2623d2c871c086da96b4f10e46a28a698aa0916714dc56982f1c", // s3
+      "047066de3855336623a665db350cd3a58a065d1769bb40e948bc6866b63ed08a", // s4
+      "9be05ea05faff9915670329e278c65e17e58a058492c092a91c0652e51b3da0d", // s5
+      "224afaa5f80aab624ac37cb50593fa742a100c88ba36d2efc670c33c4150ce27"  // s6
+    ];
+
+    // Small SHA-256 (from public-domain style implementation)
+    // keeps everything in this file, no console output.
+    // Source adapted for brevity.
+    async function sha256Hex(message) {
+      const enc = new TextEncoder();
+      const data = enc.encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+
+    const submitBtn = document.getElementById("submitBtn");
+    const result = document.getElementById("result");
+
+    submitBtn.addEventListener("click", async () => {
+      const vals = [
+        document.getElementById("s1").value,
+        document.getElementById("s2").value,
+        document.getElementById("s3").value,
+        document.getElementById("s4").value,
+        document.getElementById("s5").value,
+        document.getElementById("s6").value,
+      ];
+
+      const wrong = [];
+      for (let i = 0; i < vals.length; i++) {
+        const userText = vals[i]; // EXACT — so players must match dashes/case
+        const userHash = await sha256Hex(userText);
+        if (userHash !== STATION_HASHES[i]) {
+          wrong.push(i+1);
+        }
+      }
+
+      if (wrong.length === 0) {
+        result.className = "ok";
+        result.textContent = "✅ Access Granted.\nMaster Code: ***UNLOCKED***";
+      } else {
+        result.className = "err";
+        result.textContent = "⛔ One or more codes are incorrect.";
+        const div = document.createElement("div");
+        div.className = "wrong-list";
+        div.textContent = "Check Stations: " + wrong.join(", ");
+        result.appendChild(div);
+      }
+    });
+  </script>
+</body>
+</html>

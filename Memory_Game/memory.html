@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Memory Puzzle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <style>
+    :root {
+      --bg: #020617;
+      --muted: #94a3b8;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: rgba(0,0,0,0);
+    }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at top, #020617, #000);
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem;
+    }
+    .game-wrap {
+      background: rgba(15, 23, 42, 0.25);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 1rem;
+      width: min(100%, 520px);
+      text-align: center;
+      padding: 1rem 1rem 1.2rem;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+    .meta {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    .memory-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(90px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1.1rem;
+      justify-items: center;
+    }
+    .memory-btn {
+      height: 110px;
+      border-radius: 0.8rem;
+      border: none;
+      outline: none;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #020617;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+      transition: transform 0.1s ease;
+      touch-action: manipulation;
+    }
+    .memory-btn:active {
+      transform: translateY(2px);
+    }
+    .memory-status {
+      margin-top: 0.8rem;
+      font-size: 0.78rem;
+    }
+    button.primary {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56,189,248,0.4);
+      color: #e2e8f0;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.4rem;
+      cursor: pointer;
+      margin-top: 0.4rem;
+      font-size: 0.78rem;
+      touch-action: manipulation;
+    }
+    .success-box {
+      margin-top: 0.85rem;
+      background: rgba(22, 163, 74, 0.18);
+      border: 1px solid rgba(22, 163, 74, 0.4);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.5rem;
+      font-size: 0.78rem;
+    }
+
+    /* ============== PIGPEN WIN OVERLAY ============== */
+    #win-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6,8,12,0.75);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .win-box {
+      background: #141822;
+      border: 1px solid rgba(120,180,255,0.4);
+      border-radius: 16px;
+      padding: 1.2rem 1.4rem 1rem;
+      width: min(480px, 90%);
+      text-align: center;
+      color: #edf0f4;
+      font-family: system-ui, sans-serif;
+    }
+    .pigpen-line {
+      margin: 1rem auto;
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .pig {
+      width: 42px;
+      height: 42px;
+      border: 2px solid #edf0f4;
+      position: relative;
+      border-radius: 6px;
+    }
+    .pig-sep {
+      width: 20px;
+      height: 2px;
+      background: #edf0f4;
+      align-self: center;
+      margin: 0 0.25rem;
+    }
+    .pig-space {
+      width: 16px;
+    }
+    .mason-hint {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.6rem;
+  color: rgba(237,240,244,0.8);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+.mason-icon {
+  width: 64px;
+  height: auto;
+  filter: brightness(0.85);
+  opacity: 0.85;
+}
+@media (max-width: 420px) {
+  .mason-hint {
+    flex-direction: column;
+  }
+}
+
+    /* GRID 1 (no dots) */
+    /* F = g1 r2 c3 (right cell) */
+    .pig-g1-r2c3 { border-left: none; }
+    /* E = g1 r2 c2 (center) */
+    .pig-g1-r2c2 { }
+    /* I = g1 r3 c3 (bottom-right) */
+    .pig-g1-r3c3 {
+      border-top: none;
+      border-left: none;
+    }
+
+    /* GRID 2 (with dots) */
+    /* L = g2 r1 c3 with dot */
+    .pig-g2-r1c3 {
+      border-left: none;
+    }
+    .pig-g2-r1c3::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      background: #edf0f4;
+      border-radius: 999px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
+    }
+    .hint-note {
+      font-size: 0.72rem;
+      color: rgba(237,240,244,0.6);
+    }
+    .win-box button {
+      margin-top: 0.6rem;
+      background: #78b4ff;
+      border: none;
+      color: #020407;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap" id="game">
+    <h2>Memory Puzzle</h2>
+    <div class="meta">level <span id="level">1</span> / 5</div>
+    <div class="memory-status" id="status">Press "Start Level" to begin.</div>
+    <button id="start" class="primary">Start Level</button>
+    <div class="memory-buttons" id="buttons"></div>
+    <div id="result"></div>
+  </div>
+
+  <!-- PIGPEN WIN OVERLAY -->
+<div id="win-overlay">
+  <div class="win-box">
+   <div class="mason-hint">
+  <img src="masonic_symbol.png" alt="Masonic Symbol" class="mason-icon">
+  <span>Legacy lodge cipher variant detected.</span>
+</div>
+      <span>Symbolic order cipher detected.</span>
+    </div>
+
+    <h2>Puzzle 2 Complete ✅</h2>
+    <p>CODE:</p>
+    <div class="pigpen-line" id="pigpen-msg"></div>
+    <p class="hint-note">Decode this before the final gate.</p>
+    <button onclick="document.getElementById('win-overlay').style.display='none'">Close</button>
+  </div>
+</div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("start");
+    const btnWrap = document.getElementById("buttons");
+    const levelEl = document.getElementById("level");
+    const resultEl = document.getElementById("result");
+
+    // 6 color pads
+    const pads = [
+      { id: 0, label: "Red",    color: "#f43f5e", freq: 261.63 },
+      { id: 1, label: "Blue",   color: "#38bdf8", freq: 293.66 },
+      { id: 2, label: "Green",  color: "#22c55e", freq: 329.63 },
+      { id: 3, label: "Yellow", color: "#eab308", freq: 392.0 },
+      { id: 4, label: "Purple", color: "#a855f7", freq: 440.0 },
+      { id: 5, label: "White",  color: "#e5e7eb", freq: 523.25 },
+    ];
+    // this is the hidden clue from Puzzle 1
+    const FINAL_REQUIRED = [0, 1, 2, 3];
+
+    // sequence lengths for the first 4 levels
+    const LEVEL_PATTERNS = [3, 4, 5, 6]; // levels 1-4
+    const FINAL_LEVEL = 5;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playNote(freq, duration = 350) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      osc.start();
+      setTimeout(() => {
+        gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.03);
+        osc.stop(audioCtx.currentTime + 0.04);
+      }, duration);
+    }
+
+    let currentLevel = 1;
+    let currentSequence = [];
+    let userStep = 0;
+    let acceptingInput = false;
+
+    // build UI buttons
+    pads.forEach(p => {
+      const b = document.createElement("button");
+      b.className = "memory-btn";
+      b.style.background = p.color;
+      b.textContent = p.label;
+      b.dataset.id = p.id;
+      b.addEventListener("click", () => handleUserInput(p));
+      btnWrap.appendChild(b);
+    });
+
+    function flashButton(id) {
+      const btn = btnWrap.querySelector(`[data-id="${id}"]`);
+      const old = btn.style.filter;
+      btn.style.filter = "brightness(1.12)";
+      setTimeout(() => btn.style.filter = old, 200);
+    }
+
+    async function playSequence(seq) {
+      acceptingInput = false;
+      for (let i = 0; i < seq.length; i++) {
+        const id = seq[i];
+        const pad = pads.find(p => p.id === id);
+        flashButton(id);
+        playNote(pad.freq);
+        await new Promise(res => setTimeout(res, 520));
+      }
+      acceptingInput = true;
+      userStep = 0;
+      statusEl.textContent = "Your turn.";
+    }
+
+    function makeRandomSequence(len) {
+      const seq = [];
+      for (let i = 0; i < len; i++) {
+        seq.push(Math.floor(Math.random() * pads.length));
+      }
+      return seq;
+    }
+
+    // ===== PIGPEN STUFF (for "FEI-FEI LI") =====
+    // F  E  I   -   F  E  I   (space)   L         I
+    const PIGPEN_SEQUENCE = [
+      "pig-g1-r2c3",
+      "pig-g1-r2c2",
+      "pig-g1-r3c3",
+      "sep",
+      "pig-g1-r2c3",
+      "pig-g1-r2c2",
+      "pig-g1-r3c3",
+      "space",
+      "pig-g2-r1c3",
+      "pig-g1-r3c3"
+    ];
+
+    function renderPigpenMessage() {
+      const box = document.getElementById("pigpen-msg");
+      box.innerHTML = "";
+      PIGPEN_SEQUENCE.forEach(part => {
+        if (part === "sep") {
+          const s = document.createElement("div");
+          s.className = "pig-sep";
+          box.appendChild(s);
+        } else if (part === "space") {
+          const s = document.createElement("div");
+          s.className = "pig-space";
+          box.appendChild(s);
+        } else {
+          const g = document.createElement("div");
+          g.className = "pig " + part;
+          box.appendChild(g);
+        }
+      });
+    }
+
+    function showWinScreen() {
+      renderPigpenMessage();
+      document.getElementById("win-overlay").style.display = "flex";
+    }
+
+    function handleUserInput(pad) {
+      if (!acceptingInput) return;
+
+      // play their press
+      playNote(pad.freq);
+      flashButton(pad.id);
+
+      const expected = currentSequence[userStep];
+      if (pad.id === expected) {
+        userStep++;
+        // finished this level's sequence
+        if (userStep === currentSequence.length) {
+          acceptingInput = false;
+          if (currentLevel === FINAL_LEVEL) {
+            // final level success
+            statusEl.textContent = "Pattern accepted.";
+            resultEl.innerHTML = `
+              <div class="success-box">
+                ✅ Sequence verified.<br/>
+                Your coded message has been transmitted.
+              </div>
+            `;
+            // show pigpen overlay
+            showWinScreen();
+          } else {
+            statusEl.textContent = "Correct. Start the next level.";
+            currentLevel++;
+            levelEl.textContent = currentLevel;
+          }
+        }
+      } else {
+        // wrong
+        acceptingInput = false;
+        statusEl.textContent = "Incorrect. Tap Start Level to retry.";
+      }
+    }
+
+    startBtn.addEventListener("click", async () => {
+      resultEl.innerHTML = "";
+      // levels 1-4 → play sequence
+      if (currentLevel < FINAL_LEVEL) {
+        const seqLen = LEVEL_PATTERNS[currentLevel - 1] || 3;
+        currentSequence = makeRandomSequence(seqLen);
+        statusEl.textContent = "Watch closely…";
+        await playSequence(currentSequence);
+      } else {
+        // level 5 → silent, expect the clue from puzzle 1
+        currentSequence = [...FINAL_REQUIRED];
+        userStep = 0;
+        acceptingInput = true;
+        statusEl.textContent = "Final input required.";
+      }
+    });
+  </script>
+</body>
+</html>

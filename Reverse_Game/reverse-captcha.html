@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reverse CAPTCHA — Two-Level Suite</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1218;
+      --panel: #1c212c;
+      --white: #ebeef1;
+      --muted: #a8b0bc;
+      --accent: #78b4ff;
+      --good: #46d282;
+      --bad: #eb5c5c;
+      --warn: #ffb74d;
+      --card: #323948;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--white);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .app {
+      width: min(1200px, 100%);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    header h1 {
+      font-size: clamp(1.35rem, 2.4vw, 2.4rem);
+      margin: 0;
+    }
+    header p { margin: 4px 0 0; color: var(--muted); }
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .status-chip {
+      background: #282e3c;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      color: var(--white);
+    }
+    .content-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      gap: 14px;
+      min-height: 300px;
+    }
+    .grid-area {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(80px, 1fr));
+      gap: 14px;
+    }
+    .tile,
+    .cell {
+      background: var(--card);
+      border-radius: 14px;
+      position: relative;
+      cursor: pointer;
+      border: 3px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 90px;
+    }
+    .tile.selected,
+    .cell.selected {
+      border-color: var(--accent);
+    }
+    .tile canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      display: block;
+    }
+    .sidepanel {
+      width: min(310px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .box {
+      background: #222735;
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .box h3 {
+      margin: 0 0 6px;
+      font-size: 0.82rem;
+      color: var(--accent);
+    }
+    .box p {
+      margin: 6px 0;
+      color: var(--muted);
+      font-size: 0.74rem;
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-muted {
+      background: #303645;
+      color: #fff;
+    }
+    .footer-hint {
+      font-size: 0.75rem;
+      color: var(--warn);
+    }
+    .success-modal {
+      background: rgba(15, 18, 24, 0.65);
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .success-card {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 20px 22px 26px;
+      width: min(600px, 100%);
+      text-align: center;
+    }
+    .token-box {
+      background: #141820;
+      border-radius: 10px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 1rem;
+      color: var(--accent);
+      margin: 10px 0 12px;
+      word-break: break-all;
+    }
+    .final-panel {
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 30px 16px 40px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .final-token {
+      margin: 10px auto;
+      background: #141820;
+      padding: 10px;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: var(--accent);
+      width: min(480px, 100%);
+      word-break: break-all;
+    }
+    .final-extra {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 950px) {
+      .content-panel { flex-direction: column; }
+      .sidepanel {
+        width: 100%;
+        flex-direction: row;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .sidepanel .box { flex: 1 1 150px; }
+      .grid-area {
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      }
+    }
+    @media (max-width: 520px) {
+      .top-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .btn-row { width: 100%; }
+      button {
+        flex: 1 1 auto;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="top-row">
+      <header>
+        <h1 id="title">Reverse CAPTCHA — Level 1: AI Vision Test</h1>
+        <p id="subtitle">Select only the tiles that match the machine’s internal class.</p>
+      </header>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div id="failures" class="status-chip">Failures: 0</div>
+        <div id="progress" class="status-chip">Progress: 1/2</div>
+      </div>
+    </div>
+
+    <div class="content-panel" id="content">
+      <div class="grid-area" id="grid"></div>
+
+      <div class="sidepanel">
+        <div class="box">
+          <h3>Classifier Hints</h3>
+          <div id="hints">
+            <p>Submit wrong answers a couple of times to reveal hints.</p>
+          </div>
+        </div>
+        <div class="box">
+          <h3>Controls</h3>
+          <div class="btn-row">
+            <button class="btn-muted" id="btn-clear">Clear Selection</button>
+            <button class="btn-primary" id="btn-submit">Submit</button>
+          </div>
+        </div>
+        <p class="footer-hint" id="footer-hint">Hint unlocks after 2 failures.</p>
+      </div>
+    </div>
+
+    <div id="final-screen" style="display:none;"></div>
+  </div>
+
+  <div class="success-modal" id="success-modal" style="display:none;">
+    <div class="success-card" id="success-card"></div>
+  </div>
+
+  <script>
+    const FAILS_BEFORE_HINT = 2;
+    const LEVEL1_TOKEN = "AI-VISION-PASS-2F9C";
+    const LEVEL2_TOKEN = "OCR-PASS-7N1A";
+    const FINAL_CODE   = "ROBO-ACCESS-9X7K";
+
+    const L1_CLASSES = ["RED_DOM", "GREEN_DOM", "BRIGHT_NOISE", "DARK_NOISE", "CHECKERS", "CHECKERS_INV"];
+    const L1_HINTS = {
+      "RED_DOM": [
+        "Classifier cue: elevated red channel density.",
+        "Seek tiles with red saturation dominance."
+      ],
+      "GREEN_DOM": [
+        "Classifier cue: elevated green channel density.",
+        "Seek tiles with green saturation dominance."
+      ],
+      "BRIGHT_NOISE": [
+        "Classifier cue: high luminance cluster.",
+        "Seek tiles with consistently bright intensity."
+      ],
+      "DARK_NOISE": [
+        "Classifier cue: low luminance cluster.",
+        "Seek tiles with consistently dark intensity."
+      ],
+      "CHECKERS": [
+        "Classifier cue: even-frequency grid edges.",
+        "Seek tiles with high-contrast checker patterns."
+      ],
+      "CHECKERS_INV": [
+        "Classifier cue: even-frequency grid edges (phase shift).",
+        "Seek tiles with inverted checker contrast."
+      ]
+    };
+
+    const SAFE_ALPHA = "ACDEFGHKLMNPRTUVWXY";
+    const AMBIG_CHARS = ["O","0","I","l","1","S","5","B","8","Q","2","Z"];
+    const WORDS_SAFE = ["FLUX","WAVE","TRACK","VECTOR","DRIVE","LAYER","FILTER","MAP","CACHE","PACKET","RUNTIME","UPDATE","CART","WARM","CRATE","WADE"];
+    const WORDS_AMBIG = ["L00K","B8","S1GN","Q0DE","0BJECT","M1X","Z1P","S5","C0DE","T00L","B1N","QUEUE","L1NE","0MEGA","B08","S1ZE"];
+
+    const state = {
+      level: 1,
+      level1: {
+        rule: null,
+        tiles: [],
+        failCount: 0,
+        hintLevel: 0,
+        requiredPositives: 6,
+        total: 16
+      },
+      level2: {
+        cells: [],
+        failCount: 0,
+        hintLevel: 0,
+        requiredPos: 8,
+        total: 16
+      }
+    };
+
+    const gridEl = document.getElementById("grid");
+    const hintsEl = document.getElementById("hints");
+    const failuresEl = document.getElementById("failures");
+    const progressEl = document.getElementById("progress");
+    const titleEl = document.getElementById("title");
+    const subtitleEl = document.getElementById("subtitle");
+    const footerHintEl = document.getElementById("footer-hint");
+    const btnClear = document.getElementById("btn-clear");
+    const btnSubmit = document.getElementById("btn-submit");
+    const successModal = document.getElementById("success-modal");
+    const successCard = document.getElementById("success-card");
+    const finalScreen = document.getElementById("final-screen");
+    const contentPanel = document.getElementById("content");
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function buildLevel1() {
+      const rule = L1_CLASSES[randInt(0, L1_CLASSES.length - 1)];
+      state.level1.rule = rule;
+      state.level1.failCount = 0;
+      state.level1.hintLevel = 0;
+      state.level1.tiles = [];
+
+      const indices = Array.from({length: 16}, (_,i)=>i);
+      const posIdx = new Set();
+      while (posIdx.size < state.level1.requiredPositives) {
+        const idx = indices[randInt(0, indices.length-1)];
+        posIdx.add(idx);
+      }
+
+      gridEl.innerHTML = "";
+      for (let i = 0; i < 16; i++) {
+        const isPositive = posIdx.has(i);
+
+        // *** IMPORTANT FIX ***
+        // if the rule is checker-based, do NOT allow checker/inv-checker as negatives
+        let altCandidates;
+        if (rule === "CHECKERS" || rule === "CHECKERS_INV") {
+          altCandidates = L1_CLASSES.filter(x => x !== "CHECKERS" && x !== "CHECKERS_INV");
+        } else {
+          altCandidates = L1_CLASSES.filter(x => x !== rule);
+        }
+
+        const type = isPositive
+          ? rule
+          : altCandidates[randInt(0, altCandidates.length - 1)];
+
+        const tile = {
+          id: "t" + i,
+          isPositive,
+          selected: false,
+          type
+        };
+        state.level1.tiles.push(tile);
+
+        const tileEl = document.createElement("div");
+        tileEl.className = "tile";
+        tileEl.dataset.id = tile.id;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 160;
+        canvas.height = 160;
+        tileEl.appendChild(canvas);
+        drawL1Canvas(canvas, type);
+
+        tileEl.addEventListener("click", () => toggleLevel1Tile(tile.id, tileEl));
+        gridEl.appendChild(tileEl);
+      }
+
+      updateHeader();
+      renderL1Hints();
+    }
+
+    function drawL1Canvas(canvas, type) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+
+      if (type === "RED_DOM" || type === "GREEN_DOM" || type === "BRIGHT_NOISE" || type === "DARK_NOISE") {
+        const imgData = ctx.createImageData(w, h);
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const idx = (y * w + x) * 4;
+            if (type === "RED_DOM") {
+              imgData.data[idx] = randInt(170, 255);
+              imgData.data[idx+1] = randInt(0, 90);
+              imgData.data[idx+2] = randInt(0, 90);
+              imgData.data[idx+3] = 255;
+            } else if (type === "GREEN_DOM") {
+              imgData.data[idx] = randInt(0, 90);
+              imgData.data[idx+1] = randInt(170, 255);
+              imgData.data[idx+2] = randInt(0, 90);
+              imgData.data[idx+3] = 255;
+            } else if (type === "BRIGHT_NOISE") {
+              const v = randInt(190, 255);
+              imgData.data[idx] = v;
+              imgData.data[idx+1] = v;
+              imgData.data[idx+2] = v;
+              imgData.data[idx+3] = 255;
+            } else if (type === "DARK_NOISE") {
+              const v = randInt(20, 80);
+              imgData.data[idx] = v;
+              imgData.data[idx+1] = v;
+              imgData.data[idx+2] = v;
+              imgData.data[idx+3] = 255;
+            }
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+      } else {
+        // *** BIGGER CHECKER CELLS FOR VISIBILITY ***
+        const cells = 6; // was 10
+        const cellSize = Math.max(4, Math.floor(w / cells));
+        for (let y = 0; y < h; y += cellSize) {
+          for (let x = 0; x < w; x += cellSize) {
+            let blk = ((x/cellSize) + (y/cellSize)) % 2 === 0;
+            if (type === "CHECKERS_INV") blk = !blk;
+            const v = blk ? 235 : 30;
+            ctx.fillStyle = `rgb(${v},${v},${v})`;
+            ctx.fillRect(x, y, cellSize, cellSize);
+          }
+        }
+      }
+    }
+
+    function toggleLevel1Tile(id, tileEl) {
+      const tile = state.level1.tiles.find(t => t.id === id);
+      if (!tile) return;
+      tile.selected = !tile.selected;
+      tileEl.classList.toggle("selected", tile.selected);
+    }
+
+    function renderL1Hints() {
+      const rule = state.level1.rule;
+      const hintLevel = state.level1.hintLevel;
+      hintsEl.innerHTML = "";
+      if (hintLevel === 0) {
+        hintsEl.innerHTML = "<p>Submit wrong answers a couple of times to reveal hints.</p>";
+        return;
+      }
+      const list = L1_HINTS[rule] || [];
+      for (let i = 0; i < hintLevel; i++) {
+        if (!list[i]) break;
+        const p = document.createElement("p");
+        p.textContent = list[i];
+        hintsEl.appendChild(p);
+      }
+    }
+
+    function submitLevel1() {
+      let ok = true;
+      for (const tile of state.level1.tiles) {
+        if (tile.isPositive !== tile.selected) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        showSuccess("Level 1 Complete", "You see like a classifier.", LEVEL1_TOKEN, () => {
+          state.level = 2;
+          buildLevel2();
+        });
+      } else {
+        state.level1.failCount++;
+        if (state.level1.failCount >= FAILS_BEFORE_HINT) {
+          state.level1.hintLevel = Math.min(2, state.level1.hintLevel + 1);
+        }
+        updateHeader();
+        renderL1Hints();
+      }
+    }
+
+    function makeSafeToken() {
+      if (Math.random() < 0.55) {
+        return WORDS_SAFE[randInt(0, WORDS_SAFE.length - 1)];
+      }
+      const n = randInt(3, 7);
+      let s = "";
+      for (let i = 0; i < n; i++) {
+        s += SAFE_ALPHA[randInt(0, SAFE_ALPHA.length - 1)];
+      }
+      return s;
+    }
+    function makeAmbigToken() {
+      if (Math.random() < 0.55) {
+        return WORDS_AMBIG[randInt(0, WORDS_AMBIG.length - 1)];
+      }
+      const length = randInt(3, 7);
+      const chars = (SAFE_ALPHA + AMBIG_CHARS.join("")).split("");
+      let s = [];
+      for (let i = 0; i < length; i++) {
+        s.push(chars[randInt(0, chars.length - 1)]);
+      }
+      if (!s.some(ch => AMBIG_CHARS.includes(ch))) {
+        s[randInt(0, length - 1)] = AMBIG_CHARS[randInt(0, AMBIG_CHARS.length - 1)];
+      }
+      return s.join("");
+    }
+
+    function buildLevel2() {
+      titleEl.textContent = "Reverse CAPTCHA — Level 2: OCR Challenge";
+      subtitleEl.textContent = "Select tokens that a machine would read reliably.";
+      progressEl.textContent = "Progress: 2/2";
+      footerHintEl.textContent = "Hint unlocks after 2 failures.";
+      state.level2.failCount = 0;
+      state.level2.hintLevel = 0;
+      state.level2.cells = [];
+
+      gridEl.innerHTML = "";
+      const indices = Array.from({length: 16}, (_,i)=>i);
+      const posIdx = new Set();
+      while (posIdx.size < state.level2.requiredPos) {
+        const idx = indices[randInt(0, indices.length-1)];
+        posIdx.add(idx);
+      }
+
+      for (let i = 0; i < 16; i++) {
+        const isPos = posIdx.has(i);
+        const txt = isPos ? makeSafeToken() : makeAmbigToken();
+        const cell = { id: "c" + i, isPos, selected: false, text: txt };
+        state.level2.cells.push(cell);
+
+        const cellEl = document.createElement("div");
+        cellEl.className = "cell";
+        cellEl.dataset.id = cell.id;
+        cellEl.textContent = txt;
+        cellEl.addEventListener("click", () => toggleLevel2Cell(cell.id, cellEl));
+        gridEl.appendChild(cellEl);
+      }
+
+      renderL2Hints();
+      updateHeader();
+    }
+
+    function toggleLevel2Cell(id, el) {
+      const cell = state.level2.cells.find(c => c.id === id);
+      if (!cell) return;
+      cell.selected = !cell.selected;
+      el.classList.toggle("selected", cell.selected);
+    }
+
+    function renderL2Hints() {
+      hintsEl.innerHTML = "";
+      const base = [
+        "Avoid ambiguous glyphs (O/0, I/l/1, S/5, B/8, Q/0).",
+        "Prefer ALL-CAPS with clean shapes.",
+        "Mixed digits + lookalikes are risky."
+      ];
+      if (state.level2.hintLevel === 0) {
+        hintsEl.innerHTML = "<p>Submit wrong answers a couple of times to reveal OCR hints.</p>";
+        return;
+      }
+      for (let i = 0; i < state.level2.hintLevel; i++) {
+        const p = document.createElement("p");
+        p.textContent = base[i];
+        hintsEl.appendChild(p);
+      }
+    }
+
+    function submitLevel2() {
+      let ok = true;
+      for (const cell of state.level2.cells) {
+        if (cell.isPos !== cell.selected) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        showSuccess("Level 2 Complete", "You read like OCR.", LEVEL2_TOKEN, () => {
+          state.level = 3;
+          showFinal();
+        });
+      } else {
+        state.level2.failCount++;
+        if (state.level2.failCount >= FAILS_BEFORE_HINT) {
+          state.level2.hintLevel = Math.min(3, state.level2.hintLevel + 1);
+        }
+        updateHeader();
+        renderL2Hints();
+      }
+    }
+
+    function showFinal() {
+      contentPanel.style.display = "none";
+      finalScreen.style.display = "block";
+      finalScreen.innerHTML = `
+        <div class="final-panel">
+          <h2>Reverse CAPTCHA — Final Verification</h2>
+          <p style="color:var(--good);font-weight:600;margin-top:6px;">Verification Complete</p>
+          <p style="margin-top:4px;">Conclusion: MACHINE.</p>
+          <p style="color:var(--muted);margin-top:14px;">Access Code</p>
+          <div class="final-token">${FINAL_CODE}</div>
+          <p style="color:var(--muted);margin-top:18px;">Level Tokens</p>
+          <div class="final-extra">
+            <div class="final-token" style="font-size:0.85rem;">L1: ${LEVEL1_TOKEN}</div>
+            <div class="final-token" style="font-size:0.85rem;">L2: ${LEVEL2_TOKEN}</div>
+          </div>
+          <div style="margin-top:20px;">
+            <button class="btn-muted" onclick="restartGame()">Restart</button>
+          </div>
+        </div>
+      `;
+      titleEl.textContent = "Reverse CAPTCHA — Final Verification";
+      subtitleEl.textContent = "Chained tokens revealed.";
+      progressEl.textContent = "Progress: 2/2";
+    }
+
+    function restartGame() {
+      contentPanel.style.display = "flex";
+      finalScreen.style.display = "none";
+      state.level = 1;
+      buildLevel1();
+    }
+
+    function updateHeader() {
+      if (state.level === 1) {
+        failuresEl.textContent = "Failures: " + state.level1.failCount;
+        progressEl.textContent = "Progress: 1/2";
+      } else if (state.level === 2) {
+        failuresEl.textContent = "Failures: " + state.level2.failCount;
+        progressEl.textContent = "Progress: 2/2";
+      }
+    }
+
+    function clearSelection() {
+      if (state.level === 1) {
+        state.level1.tiles.forEach(t => t.selected = false);
+        gridEl.querySelectorAll(".tile").forEach(el => el.classList.remove("selected"));
+      } else if (state.level === 2) {
+        state.level2.cells.forEach(c => c.selected = false);
+        gridEl.querySelectorAll(".cell").forEach(el => el.classList.remove("selected"));
+      }
+    }
+
+    function showSuccess(title, body, token, onContinue) {
+      successCard.innerHTML = `
+        <h2 style="color:var(--good);margin-bottom:4px;">${title}</h2>
+        <p style="margin-bottom:10px;">${body}</p>
+        <p style="color:var(--muted);font-size:0.82rem;margin:0;">Token</p>
+        <div class="token-box">${token}</div>
+        <p style="color:var(--muted);font-size:0.74rem;margin-bottom:14px;">Click continue to proceed.</p>
+        <button class="btn-primary" id="continue-btn">Continue</button>
+      `;
+      successModal.style.display = "flex";
+      document.getElementById("continue-btn").onclick = () => {
+        successModal.style.display = "none";
+        onContinue && onContinue();
+      };
+    }
+
+    btnClear.addEventListener("click", clearSelection);
+    btnSubmit.addEventListener("click", () => {
+      if (state.level === 1) {
+        submitLevel1();
+      } else if (state.level === 2) {
+        submitLevel2();
+      }
+    });
+
+    buildLevel1();
+  </script>
+</body>
+</html>
