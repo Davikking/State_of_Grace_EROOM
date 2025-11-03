@@ -161,6 +161,62 @@
       color: #ffbebe;
     }
 
+    /* ======= Beale win overlay ======= */
+    #beale-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3,5,8,0.78);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .beale-box {
+      background: #0f172a;
+      border: 1px solid rgba(120,180,255,0.35);
+      border-radius: 14px;
+      padding: 1.1rem 1.3rem 1rem;
+      width: min(420px, 92%);
+      text-align: center;
+      color: #e2e8f0;
+    }
+    .beale-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      justify-content: center;
+      margin: 0.85rem 0 0.75rem 0;
+    }
+    .beale-num {
+      background: rgba(15,23,42,0.4);
+      border: 1px solid rgba(148,163,184,0.35);
+      border-radius: 8px;
+      padding: 0.25rem 0.55rem 0.2rem;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .beale-sep {
+      align-self: center;
+      opacity: 0.6;
+      padding: 0 0.25rem;
+      font-weight: 700;
+    }
+    .beale-hint {
+      font-size: 0.75rem;
+      color: rgba(226,232,240,0.8);
+      margin-top: 0.25rem;
+    }
+    .beale-box button {
+      margin-top: 0.6rem;
+      background: #60a5fa;
+      border: none;
+      border-radius: 8px;
+      padding: 0.45rem 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #07121e;
+    }
+
     @media (max-width: 480px) {
       .game-shell {
         border-radius: 0.75rem;
@@ -202,12 +258,41 @@
     <div id="status" class="status" aria-live="polite"></div>
   </main>
 
+  <!-- ===== Beale Win Overlay (shown on success) ===== -->
+  <div id="beale-overlay">
+    <div class="beale-box">
+      <h2>Transmission Captured ✅</h2>
+      <p>This message is stored somewhere special.</p>
+
+      <div class="beale-line" aria-label="Beale number sequence">
+        <!-- JOY BUOLAMWINI (with our “research notes” text) -->
+        <span class="beale-num">1</span>
+        <span class="beale-num">3</span>
+        <span class="beale-num">4</span>
+        <span class="beale-sep">/</span>
+        <span class="beale-num">5</span>
+        <span class="beale-num">7</span>
+        <span class="beale-num">8</span>
+        <span class="beale-num">9</span>
+        <span class="beale-num">10</span>
+        <span class="beale-num">11</span>
+        <span class="beale-num">13</span>
+        <span class="beale-num">14</span>
+        <span class="beale-num">15</span>
+        <span class="beale-num">16</span>
+      </div>
+
+      <p class="beale-hint">Use the labs research notes to recover the code.</p>
+      <button onclick="document.getElementById('beale-overlay').style.display='none'">Close</button>
+    </div>
+  </div>
+
   <script>
     // === 1. Config / Constants ===
-    const SECRET_WORD = "SIGNAL";
-    const FINAL_PASSCODE = "8623";
+    const SECRET_WORD = "SIGNAL";       // what Morse spells here
+    const FINAL_PASSCODE = "8623";       // (unused now for reveal, kept if you still want it elsewhere)
 
-    // match your pygame timings
+    // Morse timings
     const DOT_MS = 150;
     const DASH_MS = DOT_MS * 3;
     const PART_GAP_MS = DOT_MS;        // gap between dot/dash in a letter
@@ -334,7 +419,7 @@
 
     // === 5. Submit Logic ===
     function handleSubmit() {
-      if (isPlaying) return; // just like pygame, no submitting during playback
+      if (isPlaying) return; // no submitting during playback
       const val = answerInput.value.trim().toUpperCase();
       if (!val) {
         statusEl.textContent = "Enter the decoded word first.";
@@ -343,9 +428,11 @@
       }
 
       if (val === SECRET_WORD) {
-        // success shown ONLY on submit, per your note
-        statusEl.textContent = `SUCCESS! Passcode: ${FINAL_PASSCODE}`;
+        // success shown ONLY on submit
+        statusEl.textContent = "Transmission captured.";
         statusEl.className = "status ok";
+        // show Beale overlay instead of printing a plain passcode
+        document.getElementById('beale-overlay').style.display = 'flex';
       } else {
         statusEl.textContent = "Try Again...";
         statusEl.className = "status err";
@@ -356,7 +443,6 @@
 
     // === 6. Event Listeners ===
     playBtn.addEventListener("click", () => {
-      // make sure audio ctx is resumed on mobile
       if (audioCtx && audioCtx.state === "suspended") {
         audioCtx.resume();
       }
