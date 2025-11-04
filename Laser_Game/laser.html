@@ -554,7 +554,8 @@
       const targetOK = lit.includes(level.target);
       if (hitReal && targetOK && relaysOK) {
         msgEl.classList.add("success");
-        msgEl.innerHTML = `✅ Circuit validated for Level ${currentLevel+1}.<div class="token">TOKEN: <strong>${level.token}</strong></div>`;
+        let tokenHTML = level.token ? `<div class="token">TOKEN: <strong>${level.token}</strong></div>` : "";
+        msgEl.innerHTML = `✅ Circuit validated for Level ${currentLevel+1}.` + tokenHTML;
         if (currentLevel < LEVELS.length - 1) {
           nextBtn.classList.remove("hidden");
         }
@@ -583,5 +584,4 @@
   </script>
 </body>
 </html>
-
 
