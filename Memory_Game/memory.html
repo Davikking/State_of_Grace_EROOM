@@ -87,114 +87,145 @@
       padding: 0.45rem 0.5rem;
       font-size: 0.78rem;
     }
-
-    /* ============== PIGPEN WIN OVERLAY ============== */
-    #win-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(6,8,12,0.75);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    .win-box {
-      background: #141822;
-      border: 1px solid rgba(120,180,255,0.4);
-      border-radius: 16px;
-      padding: 1.2rem 1.4rem 1rem;
-      width: min(480px, 90%);
-      text-align: center;
-      color: #edf0f4;
-      font-family: system-ui, sans-serif;
-    }
-    .pigpen-line {
-      margin: 1rem auto;
-      display: flex;
-      gap: 0.55rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .pig {
-      width: 42px;
-      height: 42px;
-      border: 2px solid #edf0f4;
-      position: relative;
-      border-radius: 6px;
-    }
-    .pig-sep {
-      width: 20px;
-      height: 2px;
-      background: #edf0f4;
-      align-self: center;
-      margin: 0 0.25rem;
-    }
-    .pig-space {
-      width: 16px;
-    }
-    .mason-hint {
-  display: flex;
-  gap: 0.6rem;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.6rem;
-  color: rgba(237,240,244,0.8);
-  font-size: 0.7rem;
-  letter-spacing: 0.03em;
-}
-.mason-icon {
-  width: 64px;
-  height: auto;
-  filter: brightness(0.85);
-  opacity: 0.85;
-}
-@media (max-width: 420px) {
-  .mason-hint {
-    flex-direction: column;
+/* ============== PIGPEN WIN OVERLAY ============== */
+  #win-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,8,12,0.75);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
   }
+  .win-box {
+    background: #141822;
+    border: 1px solid rgba(120,180,255,0.4);
+    border-radius: 16px;
+    padding: 1.2rem 1.4rem 1rem;
+    width: min(480px, 90%);
+    text-align: center;
+    color: #edf0f4;
+    font-family: system-ui, sans-serif;
+  }
+  .pigpen-line {
+    margin: 1rem auto;
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pig {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    border: none;             /* important: start with no lines */
+    border-radius: 6px;
+  }
+  .pig-sep {
+    width: 20px;
+    height: 2px;
+    background: #edf0f4;
+    align-self: center;
+    margin: 0 0.25rem;
+  }
+  .pig-space {
+    width: 16px;
+  }
+
+  .mason-hint {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.6rem;
+    color: rgba(237,240,244,0.8);
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+  }
+  .mason-icon {
+    width: 64px;
+    height: auto;
+    filter: brightness(0.85);
+    opacity: 0.85;
+  }
+  @media (max-width: 420px) {
+    .mason-hint { flex-direction: column; }
+  }
+
+  /* ===== PIGPEN GRID 1 (no dots) =====
+     layout we want:
+     top-left:    top + left
+     top-middle:  top
+     top-right:   top + right
+     mid-left:    left
+     mid-center:  none
+     mid-right:   right
+     bot-left:    left + bottom
+     bot-mid:     bottom
+     bot-right:   bottom + right
+  */
+
+  /* base pigpen symbol box */
+.pig {
+  width: 42px;
+  height: 42px;
+  position: relative;
+  border: none;           /* start clean */
+  border-radius: 6px;
 }
 
-    /* GRID 1 (no dots) */
-    /* F = g1 r2 c3 (right cell) */
-    .pig-g1-r2c3 { border-left: none; }
-    /* E = g1 r2 c2 (center) */
-    .pig-g1-r2c2 { }
-    /* I = g1 r3 c3 (bottom-right) */
-    .pig-g1-r3c3 {
-      border-top: none;
-      border-left: none;
-    }
+/* === FEI-FEI LI, matching your reference image === */
 
-    /* GRID 2 (with dots) */
-    /* L = g2 r1 c3 with dot */
-    .pig-g2-r1c3 {
-      border-left: none;
-    }
-    .pig-g2-r1c3::after {
-      content: "";
-      width: 7px;
-      height: 7px;
-      background: #edf0f4;
-      border-radius: 999px;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%,-50%);
-    }
-    .hint-note {
-      font-size: 0.72rem;
-      color: rgba(237,240,244,0.6);
-    }
-    .win-box button {
-      margin-top: 0.6rem;
-      background: #78b4ff;
-      border: none;
-      color: #020407;
-      padding: 0.45rem 0.9rem;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+/* F → "[" = top + left + bottom */
+.pig-g1-r2c3 {
+  border-top: 2px solid #edf0f4;
+  border-left: 2px solid #edf0f4;
+  border-bottom: 2px solid #edf0f4;
+}
+
+/* E → full square */
+.pig-g1-r2c2 {
+  border: 2px solid #edf0f4;
+}
+
+/* I → top + left corner */
+.pig-g1-r3c3 {
+  border-top: 2px solid #edf0f4;
+  border-left: 2px solid #edf0f4;
+}
+
+/* L (dotted) → left + bottom + dot, like row 2 col 2 in your image */
+.pig-g2-r1c3 {
+  border-left: 2px solid #edf0f4;
+  border-bottom: 2px solid #edf0f4;
+  position: relative;
+}
+.pig-g2-r1c3::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: #edf0f4;
+  border-radius: 999px;
+  position: absolute;
+  top: 50%;
+  left: 55%;
+  transform: translate(-50%, -50%);
+}
+
+  .hint-note {
+    font-size: 0.72rem;
+    color: rgba(237,240,244,0.6);
+  }
+  .win-box button {
+    margin-top: 0.6rem;
+    background: #78b4ff;
+    border: none;
+    color: #020407;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
   </style>
 </head>
 <body>
@@ -207,15 +238,14 @@
     <div id="result"></div>
   </div>
 
-  <!-- PIGPEN WIN OVERLAY -->
+ <!-- PIGPEN WIN OVERLAY -->
 <div id="win-overlay">
   <div class="win-box">
-   <div class="mason-hint">
-  <img src="masonic_symbol.png" alt="Masonic Symbol" class="mason-icon">
-  <span>Legacy lodge cipher variant detected.</span>
-</div>
-      <span>Symbolic order cipher detected.</span>
+    <div class="mason-hint">
+      <img src="masonic_symbol.png" alt="Masonic Symbol" class="mason-icon">
+      <span>Legacy lodge cipher variant detected.</span>
     </div>
+    <span>Symbolic order cipher detected.</span>
 
     <h2>Puzzle 2 Complete ✅</h2>
     <p>CODE:</p>
@@ -250,7 +280,7 @@
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    function playNote(freq, duration = 350) {
+    function playNote(freq, duration = 500) {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = "sine";
@@ -281,12 +311,20 @@
       btnWrap.appendChild(b);
     });
 
-    function flashButton(id) {
-      const btn = btnWrap.querySelector(`[data-id="${id}"]`);
-      const old = btn.style.filter;
-      btn.style.filter = "brightness(1.12)";
-      setTimeout(() => btn.style.filter = old, 200);
-    }
+   function flashButton(id) {
+  const btn = btnWrap.querySelector(`[data-id="${id}"]`);
+  const old = btn.style.filter;
+  const oldShadow = btn.style.boxShadow;
+
+  // Stronger flash + glow
+  btn.style.filter = "brightness(1.6)";
+  btn.style.boxShadow = "0 0 20px rgba(255,255,255,0.8)";
+
+  setTimeout(() => {
+    btn.style.filter = old || "brightness(1)";
+    btn.style.boxShadow = oldShadow || "0 8px 18px rgba(0,0,0,0.25)";
+  }, 300);
+}
 
     async function playSequence(seq) {
       acceptingInput = false;
@@ -295,7 +333,7 @@
         const pad = pads.find(p => p.id === id);
         flashButton(id);
         playNote(pad.freq);
-        await new Promise(res => setTimeout(res, 520));
+        await new Promise(res => setTimeout(res, 800));
       }
       acceptingInput = true;
       userStep = 0;
@@ -406,4 +444,3 @@
   </script>
 </body>
 </html>
-
