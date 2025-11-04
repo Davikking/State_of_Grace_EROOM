@@ -135,48 +135,21 @@
       color: rgba(237,240,244,0.7);
     }
 
-    .modern-code {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .chain-display {
       margin: 0.25rem 0 0.4rem 0;
-    }
-    .code-label {
-      font-size: 0.68rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .code-pill {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 8px;
       background: rgba(4,5,7,0.5);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 0.35rem 0.45rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.8rem;
+      font-size: 0.72rem;
+      line-height: 1.35;
       user-select: all;
     }
-    .inline-btn {
-      display: inline-block;
-      margin-top: 0.4rem;
-      background: rgba(120,180,255,0.12);
-      border: 1px solid rgba(120,180,255,0.35);
-      border-radius: 6px;
-      padding: 0.25rem 0.5rem;
-      font-size: 0.62rem;
-      color: #fff;
-      cursor: pointer;
-    }
-    .step-output {
-      margin-top: 0.3rem;
-      font-size: 0.6rem;
-      background: rgba(0,0,0,0.15);
-      border: 1px solid rgba(255,255,255,0.02);
-      border-radius: 6px;
-      padding: 0.3rem 0.4rem;
-      line-height: 1.35;
-      word-break: break-word;
+    .glitch {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.03em;
+      color: rgba(237,240,244,0.78);
     }
   </style>
 </head>
@@ -239,21 +212,18 @@
         </div>
       </div>
 
-      <!-- Station 6 — Modern (Base64 + XOR) -->
+      <!-- Station 6 — AI-Themed Word-Chain Cipher -->
       <div class="field">
         <label for="s6">Code 6: </label>
 
-        <div class="modern-code">
-          <div class="code-label">Code:</div>
-          <code class="code-pill" id="modernCipher">TFZBW0dGTi9NXUpOVUpOQw==</code>
+        <div class="chain-display" id="chain6">
+          Circuit yield node tensor hub input algorithm byte relay epoch azure zone epoch array loop
         </div>
 
         <input id="s6" autocomplete="off" placeholder="enter decoded key…" />
         <div class="hint">
-          <strong>Hint:</strong> 1) Decode from Base64. 2) XOR the decoded bytes with
-          <code>STATE_OF_GRACE_2025</code>. You’ll get the name of an MIT roboticist.
-          <div class="inline-btn" onclick="showXorSteps()">How do I do XOR?</div>
-          <div id="stepOutput" class="step-output" style="display:none;"></div>
+          <strong class="glitch">&gt; LINK-CHAIN ERROR:</strong> Loop detected — primary keys embedded at each node <em>start</em>.
+          <br/>Outputs are feeding the next inputs — read the initial signals only.
         </div>
       </div>
     </div>
@@ -283,36 +253,6 @@
       "dd3c9ac01b31e2ebff85710392bb4c79f262270ec384c9dffaed7f7122f9cd4a"  // s6 CYNTHIA BREAZEAL
     ];
 
-    // base64 → bytes
-    function b64ToBytes(b64) {
-      const bin = atob(b64);
-      const arr = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) {
-        arr[i] = bin.charCodeAt(i);
-      }
-      return arr;
-    }
-
-    // this is called by onclick in the HTML
-    function showXorSteps() {
-      const cipherEl = document.getElementById("modernCipher");
-      const stepOutput = document.getElementById("stepOutput");
-      if (!cipherEl || !stepOutput) return;
-
-      const b64 = cipherEl.textContent.trim();
-      const decodedLen = b64ToBytes(b64).length;
-      const key = "STATE_OF_GRACE_2025";
-
-      stepOutput.style.display = "block";
-      stepOutput.innerHTML =
-        "<strong>Step 1:</strong> Go to an online Base64 decoder and paste <code>" + b64 + "</code>." +
-        "<br>This will give you " + decodedLen + " scrambled characters (not the final name)." +
-        "<br><strong>Step 2:</strong> XOR those characters with the passphrase <code>" + key + "</code>." +
-        "<br>Line them up: first decoded char ⟷ 'S', second ⟷ 'T', third ⟷ 'A', keep going, and when you reach the end of the passphrase, start again at 'S'." +
-        "<br><strong>Step 3:</strong> After XOR, you will see a normal name. Type that in the box.";
-    }
-
-    // submit handler
     document.getElementById("submitBtn").addEventListener("click", async () => {
       const result = document.getElementById("result");
       const vals = [
@@ -360,4 +300,3 @@
   </script>
 </body>
 </html>
-
