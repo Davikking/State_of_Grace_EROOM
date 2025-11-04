@@ -125,7 +125,7 @@
       background: rgba(3,4,6,0.35);
       border: 1px solid transparent;
       font-size: 0.88rem;
-      white-space: pre-line;
+      white-space: normal;
     }
     #result.ok { border-color: rgba(70,210,130,0.4); background: rgba(70,210,130,0.05); }
     #result.err { border-color: rgba(235,92,92,0.4); background: rgba(235,92,92,0.03); }
@@ -239,111 +239,124 @@
         </div>
       </div>
 
-   <!-- Station 6 — Modern (Base64 + XOR) -->
-<div class="field">
-  <label for="s6">Code 6: </label>
+      <!-- Station 6 — Modern (Base64 + XOR) -->
+      <div class="field">
+        <label for="s6">Code 6: </label>
 
-  <div class="modern-code">
-    <div class="code-label">Code:</div>
-    <code class="code-pill" id="modernCipher">EA0PAA0WDmYdFRcAGQAefg==</code>
+        <div class="modern-code">
+          <div class="code-label">Code:</div>
+          <code class="code-pill" id="modernCipher">EA0PAA0WDmYdFRcAGQAefg==</code>
+        </div>
+
+        <input id="s6" autocomplete="off" placeholder="enter decoded key…" />
+        <div class="hint">
+          <strong>Hint:</strong> 1) Decode from Base64. 2) XOR the decoded bytes with
+          <code>STATE_OF_GRACE_2025</code>. You’ll get the name of an MIT roboticist.
+          <div class="inline-btn" onclick="showXorSteps()">How do I do XOR?</div>
+          <div id="stepOutput" class="step-output" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- submit + result -->
+    <button id="submitBtn">Submit Codes</button>
+    <div id="result"></div>
   </div>
-
-  <input id="s6" autocomplete="off" placeholder="enter decoded key…" />
-  <div class="hint">
-    <strong>Hint:</strong> 1) Decode from Base64. 2) XOR the decoded bytes with
-    <code>STATE_OF_GRACE_2025</code>. You’ll get the name of an MIT roboticist.
-    <!-- NOTE: onclick here -->
-    <div class="inline-btn" onclick="showXorSteps()">How do I do XOR?</div>
-    <div id="stepOutput" class="step-output" style="display:none;"></div>
-  </div>
-</div>
-
 
   <script>
-  // ---- SHA-256 helper ----
-  async function sha256Hex(message) {
-    const enc = new TextEncoder();
-    const data = enc.encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  // expected hashes
-  const STATION_HASHES = [
-    "fb977a7ddd4dc338c9a8f531b10673ca7dfe6f25e00ada29a88a3de3b02b9c35", // s1 PARISA TABRIZ
-    "84251a2e80c41e24e77d114823276d7a923bbed234a8531370d0b36fff8332a3", // s2 FEI-FEI LI
-    "97a7d1e37677d9df763a61121a5f1d1286b544c474311f7492da666fa9e54b8a", // s3 TIMNIT GEBRU
-    "00c5f92bd72ca1221c715a03d7c5e9b693b763eb67328f2385a34e6a8821d1c0", // s4 JOY BUOLAMWINI
-    "8962d8f97c11195aae052d93de6ddbd80c548a9394e80e4dba4b8606cdec1b82", // s5 DAPHNE KOLLER
-    "dd3c9ac01b31e2ebff85710392bb4c79f262270ec384c9dffaed7f7122f9cd4a"  // s6 CYNTHIA BREAZEAL
-  ];
-
-  // base64 → bytes
-  function b64ToBytes(b64) {
-    const bin = atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) {
-      arr[i] = bin.charCodeAt(i);
+    // ---- SHA-256 helper ----
+    async function sha256Hex(message) {
+      const enc = new TextEncoder();
+      const data = enc.encode(message);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
-    return arr;
-  }
 
-  // this is called by onclick in the HTML
-  function showXorSteps() {
-    const cipherEl = document.getElementById("modernCipher");
-    const stepOutput = document.getElementById("stepOutput");
-    if (!cipherEl || !stepOutput) return;
-
-    const b64 = cipherEl.textContent.trim();
-    const decodedLen = b64ToBytes(b64).length;
-    const key = "STATE_OF_GRACE_2025";
-
-    stepOutput.style.display = "block";
-    stepOutput.innerHTML =
-      "<strong>Step 1:</strong> Go to an online Base64 decoder and paste <code>" + b64 + "</code>." +
-      "<br>This will give you " + decodedLen + " scrambled characters (not the final name)." +
-      "<br><strong>Step 2:</strong> XOR those characters with the passphrase <code>" + key + "</code>." +
-      "<br>Line them up: first decoded char ⟷ 'S', second ⟷ 'T', third ⟷ 'A', keep going, and when you reach the end of the passphrase, start again at 'S'." +
-      "<br><strong>Step 3:</strong> After XOR, you will see a normal name. Type that in the box.";
-  }
-
-  // submit handler
-  document.getElementById("submitBtn").addEventListener("click", async () => {
-    const result = document.getElementById("result");
-    const vals = [
-      document.getElementById("s1").value,
-      document.getElementById("s2").value,
-      document.getElementById("s3").value,
-      document.getElementById("s4").value,
-      document.getElementById("s5").value,
-      document.getElementById("s6").value,
+    // expected hashes
+    const STATION_HASHES = [
+      "fb977a7ddd4dc338c9a8f531b10673ca7dfe6f25e00ada29a88a3de3b02b9c35", // s1 PARISA TABRIZ
+      "84251a2e80c41e24e77d114823276d7a923bbed234a8531370d0b36fff8332a3", // s2 FEI-FEI LI
+      "97a7d1e37677d9df763a61121a5f1d1286b544c474311f7492da666fa9e54b8a", // s3 TIMNIT GEBRU
+      "00c5f92bd72ca1221c715a03d7c5e9b693b763eb67328f2385a34e6a8821d1c0", // s4 JOY BUOLAMWINI
+      "8962d8f97c11195aae052d93de6ddbd80c548a9394e80e4dba4b8606cdec1b82", // s5 DAPHNE KOLLER
+      "dd3c9ac01b31e2ebff85710392bb4c79f262270ec384c9dffaed7f7122f9cd4a"  // s6 CYNTHIA BREAZEAL
     ];
 
-    const wrong = [];
-    for (let i = 0; i < vals.length; i++) {
-      const userHash = await sha256Hex(vals[i]);
-      if (userHash !== STATION_HASHES[i]) wrong.push(i + 1);
+    // base64 → bytes
+    function b64ToBytes(b64) {
+      const bin = atob(b64);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) {
+        arr[i] = bin.charCodeAt(i);
+      }
+      return arr;
     }
 
-    if (wrong.length === 0) {
-      result.className = "ok";
-      result.textContent = "✅ Access Granted.\nMaster Code: ***UNLOCKED***";
-    } else {
-      result.className = "err";
-      result.textContent = "⛔ One or more codes are incorrect.";
-      const div = document.createElement("div");
-      div.className = "wrong-list";
-      div.textContent = "Check Stations: " + wrong.join(", ");
-      result.appendChild(div);
+    // this is called by onclick in the HTML
+    function showXorSteps() {
+      const cipherEl = document.getElementById("modernCipher");
+      const stepOutput = document.getElementById("stepOutput");
+      if (!cipherEl || !stepOutput) return;
+
+      const b64 = cipherEl.textContent.trim();
+      const decodedLen = b64ToBytes(b64).length;
+      const key = "STATE_OF_GRACE_2025";
+
+      stepOutput.style.display = "block";
+      stepOutput.innerHTML =
+        "<strong>Step 1:</strong> Go to an online Base64 decoder and paste <code>" + b64 + "</code>." +
+        "<br>This will give you " + decodedLen + " scrambled characters (not the final name)." +
+        "<br><strong>Step 2:</strong> XOR those characters with the passphrase <code>" + key + "</code>." +
+        "<br>Line them up: first decoded char ⟷ 'S', second ⟷ 'T', third ⟷ 'A', keep going, and when you reach the end of the passphrase, start again at 'S'." +
+        "<br><strong>Step 3:</strong> After XOR, you will see a normal name. Type that in the box.";
     }
-  });
-</script>
+
+    // submit handler
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const result = document.getElementById("result");
+      const vals = [
+        document.getElementById("s1").value,
+        document.getElementById("s2").value,
+        document.getElementById("s3").value,
+        document.getElementById("s4").value,
+        document.getElementById("s5").value,
+        document.getElementById("s6").value,
+      ];
+
+      const wrong = [];
+      for (let i = 0; i < vals.length; i++) {
+        const userHash = await sha256Hex(vals[i]);
+        if (userHash !== STATION_HASHES[i]) wrong.push(i + 1);
+      }
+
+      if (wrong.length === 0) {
+        result.className = "ok";
+        result.innerHTML = `
+          ✅ <strong>Access Granted.</strong><br>
+          <strong>Congratulations!</strong> You found all the famous women in AI and cybersecurity the AI was trying to hide.
+          <br><br>
+          <em>Recovered identities:</em>
+          <ul style="margin:0.45rem 0 0 1.1rem; padding:0; font-size:0.78rem;">
+            <li>PARISA TABRIZ</li>
+            <li>FEI-FEI LI</li>
+            <li>TIMNIT GEBRU</li>
+            <li>JOY BUOLAMWINI</li>
+            <li>DAPHNE KOLLER</li>
+            <li>CYNTHIA BREAZEAL</li>
+          </ul>
+          <br>
+          Master Code: <strong>***UNLOCKED***</strong>
+        `;
+      } else {
+        result.className = "err";
+        result.textContent = "⛔ One or more codes are incorrect.";
+        const div = document.createElement("div");
+        div.className = "wrong-list";
+        div.textContent = "Check Stations: " + wrong.join(", ");
+        result.appendChild(div);
+      }
+    });
+  </script>
 </body>
 </html>
-
-
-
-
-
-
