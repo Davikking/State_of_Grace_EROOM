@@ -18,16 +18,15 @@ window.renderSwitchPuzzle = function (container) {
   container.appendChild(hint);
 
   // 🔐 secret pattern (0,1,2 per button)
-  const targetPattern = [2, 1, 0, 1, 2, 0, 2, 1];
+  const targetPattern = [1, 0, 1, 0, 1, 0, 1, 0];
   const current = Array(targetPattern.length).fill(0);
 
   // 🎨 Use arcade-ish colors like the image you sent
   // red, green, yellow, blue, white — we only need 3 states, so pick 3
   const colorStates = [
     { name: "Red", color: "#ef4444" },
-    { name: "Green", color: "#22c55e" },
     { name: "Yellow", color: "#facc15" },
-    // if you want 4th, add: { name: "Blue", color: "#38bdf8" },
+    { name: "Green", color: "#22c55e" }, // if you want 4th, add: { name: "Blue", color: "#38bdf8" },
   ];
 
   const grid = document.createElement("div");
